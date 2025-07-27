@@ -9,6 +9,16 @@
 ### 点击此按钮将可以一键将本项目部署至自己的nitlify
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/LanRhyme/Web-MinecraftLogAnalyzer-Netlify)
 
+### 如果一键部署失败请尝试手动部署
+
+1. fork本项目到自己的GitHub账号
+2. 登录 [Netlify](https://app.netlify.com/) 账号
+3. 点击 **New site from Git** 按钮
+4. 选择 **GitHub** 作为部署来源
+5. 选择刚才fork的仓库
+6. 配置全部默认，环境变量之后设置
+7. 点击 **Deploy site** 按钮开始部署
+
 ### 配置环境变量
 在netlify中配置环境变量
 
