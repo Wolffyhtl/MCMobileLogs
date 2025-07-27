@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft日志分析器</title>
+    <script src="https://cdn.tailwindcss.com/3.3.3"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- CSS styles remain unchanged --- */
+        :root {
+            --bg-primary: #f8f9fa;
+            --text-primary: #212529;
+            --card-bg: #ffffff;
+            --card-border: #e9ecef;
+            --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            --nav-bg: rgba(255, 255, 255, 0.75);
+            --nav-border: rgba(0, 0, 0, 0.1);
+            --nav-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+            --nav-item-active-text: #ffffff;
+            --amethyst-color: #28a745;
+            --amethyst-color-hover: #218838;
+            --highlight-bg: rgba(40, 167, 69, 0.15);
+            --blob-gradient-start: rgba(40, 167, 69, 0.2);
+            --blob-gradient-end: rgba(33, 136, 56, 0.2);
+            --footer-bg: #ffffff;
+            --footer-text: #6c757d;
+            --footer-link: var(--amethyst-color);
+            --footer-link-hover: var(--amethyst-color-hover);
+            --theme-toggle-icon-color: #495057;
+            --focus-ring-green-500: #28a745;
+            --menu-bg: rgba(255, 255, 255, 0.85);
+            --menu-border: rgba(0, 0, 0, 0.1);
+            --menu-item-text: #374151;
+            --menu-item-icon: #6b7280;
+            --menu-item-hover-bg: #f3f4f6;
+            --menu-divider: #e5e7eb;
+            --menu-header-text: #9ca3af;
+
+            /* 错误提示颜色 */
+            --text-red-700: #b91c1c;
+            --text-red-800: #991b1b;
+            --bg-red-50: #fef2f2;
+            --bg-red-100: #fee2e2;
+            --text-yellow-700: #a16207;
+            --text-yellow-800: #854d09;
+            --bg-yellow-50: #fffbeb;
+            --bg-yellow-100: #fef3c7;
+            --text-blue-700: #1d4ed8;
+            --text-blue-800: #1e40af;
+            --bg-blue-50: #eff6ff;
+            --bg-blue-100: #dbeafe;
+        }
+
+        .dark-mode {
+            --bg-primary: #121212;
+            --text-primary: #e9ecef;
+            --card-bg: #1e1e1e;
+            --card-border: #343a40;
+            --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            --nav-bg: rgba(20, 20, 20, 0.7);
+            --nav-border: rgba(255, 255, 255, 0.1);
+            --nav-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            --nav-item-active-text: #121212;
+            --amethyst-color: #3ddc84;
+            --amethyst-color-hover: #35c474;
+            --highlight-bg: rgba(61, 220, 132, 0.15);
+            --blob-gradient-start: rgba(61, 220, 132, 0.1);
+            --blob-gradient-end: rgba(53, 196, 116, 0.1);
+            --footer-bg: #1e1e1e;
+            --footer-text: #adb5bd;
+            --footer-link: var(--amethyst-color);
+            --theme-toggle-icon-color: #adb5bd;
+            --focus-ring-green-500: #3ddc84;
+            --menu-bg: rgba(45, 55, 72, 0.85);
+            --menu-border: rgba(255, 255, 255, 0.15);
+            --menu-item-text: #e2e8f0;
+            --menu-item-icon: #a0aec0;
+            --menu-item-hover-bg: #4a5568;
+            --menu-divider: #4a5568;
+            --menu-header-text: #a0aec0;
+
+            /* 错误提示颜色 (Dark) */
+            --text-red-700: #ef4444;
+            --text-red-800: #fca5a5;
+            --bg-red-50: #2b1d1d;
+            --bg-red-100: #4a1919;
+            --text-yellow-700: #facc15;
+            --text-yellow-800: #fde68a;
+            --bg-yellow-50: #3b321c;
+            --bg-yellow-100: #4a3219;
+            --text-blue-700: #60a5fa;
+            --text-blue-800: #93c5fd;
+            --bg-blue-50: #253148;
+            --bg-blue-100: #192d4a;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .page-content {
+            flex-grow: 1;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            box-sizing: border-box;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .mc-bg-container {
+            position: fixed;
+            z-index: -2;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            background-position: center;
+            background-size: cover;
+            transition: background-image 0.3s ease;
+        }
+
+        .solid-card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid var(--card-border);
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s ease;
+            padding: 1.5rem;
+        }
+
+        .solid-card:hover {
+            transform: scale(1.02);
+        }
+
+        .header-card {
+            background: var(--nav-bg);
+            backdrop-filter: blur(12px);
+            border-radius: 9999px;
+            border: 1px solid var(--nav-border);
+            box-shadow: var(--nav-shadow);
+        }
+
+        .amethyst-dark-button {
+            background-color: var(--amethyst-color);
+            color: var(--nav-item-active-text);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .amethyst-dark-button:hover {
+            background-color: var(--amethyst-color-hover);
+            transform: translateY(-2px);
+        }
+
+        .amethyst-dark-button i {
+            color: var(--nav-item-active-text) !important;
+            opacity: 0.8;
+        }
+
+        .blob {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: linear-gradient(135deg, var(--blob-gradient-start) 0%, var(--blob-gradient-end) 100%);
+            filter: blur(60px);
+            border-radius: 50%;
+            z-index: -1;
+            animation: blob-movement 15s infinite linear;
+        }
+
+        @keyframes blob-movement {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(5%, -10%) scale(1.3);
+            }
+
+            66% {
+                transform: translate(-15%, 5%) scale(0.9);
+            }
+
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+        }
+
+        .anim-card {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+        }
+
+        .anim-card.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .card-bounce {
+            animation: cardBounce 0.3s ease-out;
+        }
+
+        @keyframes cardBounce {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(0.95);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        input[type="file"],
+        input[type="text"],
+        textarea {
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            background-color: var(--bg-primary);
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
+
+        input[type="file"]:focus,
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--focus-ring-green-500);
+            box-shadow: 0 0 0 2px var(--focus-ring-green-500);
+        }
+
+        .chart-container {
+            height: 300px;
+            width: 100%;
+            position: relative;
+        }
+
+        .amethyst-bg {
+            background-color: var(--amethyst-color);
+        }
+
+        footer {
+            background-color: var(--footer-bg);
+            color: var(--footer-text);
+            border-top: 1px solid var(--card-border);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        footer a {
+            color: var(--footer-link);
+            transition: color 0.3s ease;
+        }
+
+        footer a:hover {
+            color: var(--footer-link-hover);
+            text-decoration: underline;
+        }
+
+        #theme-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-left: 20px;
+            border-radius: 50%;
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+        }
+
+        #theme-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        .theme-icon-color {
+            color: var(--theme-toggle-icon-color);
+            transition: color 0.3s ease;
+        }
+
+        #custom-menu {
+            display: none;
+            position: fixed;
+            background: var(--menu-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 0.5rem 0;
+            z-index: 9999;
+            min-width: 180px;
+            overflow: hidden;
+            transition: all 0.2s ease-out;
+            transform-origin: top left;
+            opacity: 0;
+            transform: scale(0.95);
+            border: 1px solid var(--menu-border);
+            user-select: none;
+        }
+
+        #custom-menu.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.25rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--menu-item-text);
+        }
+
+        .menu-item:hover {
+            background-color: var(--menu-item-hover-bg);
+        }
+
+        .menu-divider {
+            border-top: 1px solid var(--menu-divider);
+            margin: 0.25rem 0;
+        }
+
+        .menu-header {
+            padding: 0.5rem 1.25rem;
+            font-size: 0.875rem;
+            color: var(--menu-header-text);
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .bg-red-50 {
+            background-color: var(--bg-red-50);
+        }
+
+        .text-red-700 {
+            color: var(--text-red-700);
+        }
+
+        .bg-red-100 {
+            background-color: var(--bg-red-100);
+        }
+
+        .text-red-800 {
+            color: var(--text-red-800);
+        }
+
+        .bg-yellow-50 {
+            background-color: var(--bg-yellow-50);
+        }
+
+        .text-yellow-700 {
+            color: var(--text-yellow-700);
+        }
+
+        .bg-yellow-100 {
+            background-color: var(--bg-yellow-100);
+        }
+
+        .text-yellow-800 {
+            color: var(--text-yellow-800);
+        }
+
+        .bg-blue-50 {
+            background-color: var(--bg-blue-50);
+        }
+
+        .text-blue-700 {
+            color: var(--text-blue-700);
+        }
+
+        .bg-blue-100 {
+            background-color: var(--bg-blue-100);
+        }
+
+        .text-blue-800 {
+            color: var(--text-blue-800);
+        }
+
+        #analysisResult .result-card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid var(--card-border);
+            box-shadow: var(--card-shadow);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .warning-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border-radius: 15px;
+            border: 1px solid var(--card-border);
+            box-shadow: var(--card-shadow);
+            padding: 2rem;
+            z-index: 10000;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            color: var(--text-primary);
+        }
+
+        .warning-popup h3 {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-red-700);
+            margin-bottom: 1rem;
+        }
+
+        .warning-popup p {
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .warning-popup button {
+            background-color: var(--amethyst-color);
+            color: var(--nav-item-active-text);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+        }
+
+        .warning-popup button:hover {
+            background-color: var(--amethyst-color-hover);
+        }
+
+        .gemini-content h1,
+        .gemini-content h2,
+        .gemini-content h3 {
+            font-weight: bold;
+            color: var(--text-primary);
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.25rem;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .gemini-content p {
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .gemini-content ul {
+            list-style: none;
+            padding-left: 0;
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .gemini-content ul li {
+            position: relative;
+            padding-left: 1.2em;
+            line-height: 1.6;
+        }
+
+        .gemini-content ul li::before {
+            content: '';
+            display: inline-block;
+            width: 0.5em;
+            height: 0.5em;
+            background-color: var(--text-primary);
+            border-radius: 50%;
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .gemini-content ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .gemini-content code {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: var(--highlight-bg);
+            color: var(--amethyst-color);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.9em;
+            display: inline-block;
+            vertical-align: middle;
+            line-height: 1.2;
+            box-sizing: border-box;
+        }
+
+        .gemini-content pre {
+            background-color: rgba(0, 0, 0, 0.05);
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 1rem;
+            border: 1px solid var(--card-border);
+        }
+
+        .dark-mode .gemini-content pre {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .gemini-content a {
+            color: var(--footer-link);
+            text-decoration: underline;
+        }
+
+        .gemini-content a:hover {
+            color: var(--footer-link-hover);
+        }
+
+        .grid-compact {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        @media (max-width: 1024px) {
+            .grid-compact {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .grid-compact {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen relative overflow-x-hidden">
+<div class="mc-bg-container"></div>
+<div class="blob" style="top: 10%; left: 5%;"></div>
+<div class="blob" style="top: 70%; right: 10%; transform: scale(0.8);"></div>
+
+<div class="min-h-screen flex flex-col items-center relative z-10">
+    <header class="w-full py-4 px-6 flex justify-center items-center sticky top-4 z-20">
+        <div class="container mx-auto header-card p-2 flex items-center justify-between">
+            <div class="flex items-center">
+                <div class="w-10 h-10 flex items-center justify-center ml-3 mr-3 rounded-full">
+                    <i class="fas fa-file-alt theme-icon-color text-xl"></i>
+                </div>
+                <h1 class="text-xl md:text-2xl font-bold">Minecraft-Mobile日志分析器</h1>
+            </div>
+            <div class="flex items-center space-x-4 mr-3">
+                <button id="theme-toggle">
+                    <i class="fas fa-moon text-xl"></i>
+                </button>
+                <a href="https://lanrhyme.netlify.app/" class="amethyst-dark-button hidden md:flex items-center">
+                    <i class="fas fa-arrow-left mr-2"></i>返回LanRhyme的个人网站
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="page-content">
+        <section class="text-center mb-12 w-full">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4">Minecraft-Mobile日志分析器</h1>
+            <p class="text-xl md:text-2xl mb-8 opacity-80">适用于安卓和iOS设备的Minecraft日志分析器工具</p>
+            <div class="solid-card w-full max-w-6xl mx-auto hover:scale-105">
+                <div class="flex flex-col md:flex-row gap-4">
+                    <input id="logFile" type="file" class="flex-grow p-3 rounded-lg" accept=".log,.txt">
+                    <button id="uploadBtn" class="amethyst-dark-button flex justify-center items-center">
+                        <i class="fas fa-upload mr-2"></i>上传日志文件
+                    </button>
+                </div>
+                <p class="text-sm mt-3" style="color: var(--footer-text);">支持.log和.txt格式的日志文件，请确保文件大小小于8M</p>
+                <p class="text-sm mt-3" style="color: var(--footer-text);">支持Amethyst(pojav)_iOS、Zalith Launcher、Fold Craft Launcher</p>
+            </div>
+            <div id="analysisResult" class="mt-8 text-left max-w-6xl mx-auto"></div>
+        </section>
+
+        <section class="flex flex-col gap-8 w-full max-w-6xl mx-auto">
+            <div class="grid-compact">
+                <a href="https://github.com/LanRhyme/Web-MinecraftLogAnalyzer" target="_blank"
+                   rel="noopener noreferrer" id="github-info"
+                   class="solid-card anim-card block cursor-pointer hover:scale-105">
+                    <h3 class="text-lg font-semibold mb-2 flex items-center">
+                            <span class="w-7 h-7 rounded-full flex items-center justify-center mr-2 text-sm">
+                                <i class="fab fa-github theme-icon-color"></i>
+                            </span>
+                        GitHub 项目信息
+                    </h3>
+                    <div class="text-sm space-y-1">
+                        <p>Stars: <span id="github-stars" class="font-medium">加载中...</span></p>
+                        <p>Last Commit: <span id="github-commit" class="font-medium">加载中...</span></p>
+                        <p class="mt-1 text-xs opacity-75">数据来自 LanRhyme/Web-MinecraftLogAnalyzer</p>
+                    </div>
+                </a>
+
+                <div id="ai-status" class="solid-card anim-card hover:scale-105">
+                    <h3 class="text-lg font-semibold mb-2 flex items-center">
+                            <span class="w-7 h-7 rounded-full flex items-center justify-center mr-2 text-sm">
+                                <i class="fas fa-star theme-icon-color"></i>
+                            </span>
+                        AI 服务状态
+                    </h3>
+                    <div class="text-sm space-y-1">
+                        <p>Gemini AI: <span id="gemini-status" class="font-medium">检测中...</span></p>
+                        <p>连接延迟: <span id="gemini-latency" class="font-medium">检测中...</span></p>
+                        <p class="mt-1 text-xs opacity-75">Gemini 2.5 Flash</p>
+                    </div>
+                </div>
+
+                <div id="usage-stats" class="solid-card anim-card hover:scale-105">
+                    <h3 class="text-lg font-semibold mb-2 flex items-center">
+                        <span class="w-7 h-7 rounded-full flex items-center justify-center mr-2 text-sm">
+                            <i class="fas fa-chart-line theme-icon-color"></i>
+                        </span>
+                        使用情况统计
+                    </h3>
+                    <div class="text-sm space-y-1">
+                        <p>总上传数: <span id="stats-total" class="font-medium">加载中...</span></p>
+                        <p>今日上传: <span id="stats-daily" class="font-medium">加载中...</span></p>
+                        <p>本周上传: <span id="stats-weekly" class="font-medium">加载中...</span></p>
+                    </div>
+                    <div class="mt-4" style="height: 80px;">
+                        <canvas id="usage-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="w-full text-center py-6 mt-auto">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0 text-center md:text-left">
+                    <div class="flex items-center justify-center md:justify-start">
+                        <div class="w-8 h-8 flex items-center justify-center mr-2 rounded"><i
+                                class="fas fa-file-alt theme-icon-color"></i></div>
+                        <span class="font-bold">Minecraft-Mobile日志分析器</span>
+                    </div>
+                    <p class="text-sm mt-2">© 2025 LanRhyme. All rights reserved. | Built with ❤️ and Code.</p>
+                </div>
+                <div class="text-sm text-center md:text-right">
+                    <p> <a href="https://lanrhyme.netlify.app/">https://lanrhyme.netlify.app/</a></p>
+                </div>
+            </div>
+        </div>
+    </footer>
+</div>
+
+<div id="custom-menu">
+    <div class="menu-header">常规操作</div>
+    <div class="menu-item" id="back-item" onclick="backAction()"><i class="fa fa-arrow-left"></i><span>返回</span>
+    </div>
+    <div class="menu-item" id="refresh-item" onclick="refreshAction()"><i
+            class="fa fa-refresh"></i><span>刷新</span></div>
+    <div class="menu-divider"></div>
+    <div class="menu-header">编辑操作</div>
+    <div class="menu-item" id="copy-item" onclick="copyAction()"><i class="fa fa-copy"></i><span>复制</span></div>
+    <div class="menu-item" id="paste-item" onclick="pasteAction()"><i class="fa fa-paste"></i><span>粘贴</span></div>
+    <div class="menu-divider"></div>
+    <div class="menu-header">链接操作</div>
+    <div class="menu-item" id="open-in-new-tab-item" onclick="openInNewTabAction()"><i
+            class="fa fa-external-link"></i><span>在新标签页打开</span></div>
+    <div class="menu-item" id="copy-link-item" onclick="copyLinkAction()"><i
+            class="fa fa-link"></i><span>复制链接地址</span></div>
+    <div class="menu-divider"></div>
+    <div class="menu-header">其他操作</div>
+    <div class="menu-item" id="back-to-home-item" onclick="backToHomeAction()"><i
+            class="fa fa-home"></i><span>返回主页</span></div>
+</div>
+<div id="warningPopup" class="warning-popup hidden">
+    <h3>警告!</h3>
+    <p>检测到关键词:<br><strong id="warningKeyword"></strong></p>
+    <p id="warningDescription"></p>
+    <button onclick="hideWarningPopup()">确定</button>
+</div>
+
+<script>
+    // --- JavaScript ---
+
+    let uploadChartInstance = null;
+    let statsChartInstance = null;
+
+    // Right-click menu (unchanged)
+    const customMenu = document.getElementById('custom-menu');
+    const backItem = document.getElementById('back-item');
+    const refreshItem = document.getElementById('refresh-item');
+    const copyItem = document.getElementById('copy-item');
+    const pasteItem = document.getElementById('paste-item');
+    const openInNewTabItem = document.getElementById('open-in-new-tab-item');
+    const copyLinkItem = document.getElementById('copy-link-item');
+    const backToHomeItem = document.getElementById('back-to-home-item');
+    let isMenuVisible = false, currentTarget = null, selectedText = '', isAnimating = false, menuOpenTime = 0, focusedElementBeforeMenu = null;
+    document.addEventListener('contextmenu', function (e) {
+        e.preventDefault();
+        focusedElementBeforeMenu = document.activeElement;
+        const now = Date.now();
+        const isNewOpen = !isMenuVisible || (now - menuOpenTime > 300);
+        selectedText = window.getSelection().toString();
+        currentTarget = e.target.closest('a');
+        updateMenuItemsVisibility();
+        const menuWidth = customMenu.offsetWidth, menuHeight = customMenu.offsetHeight;
+        const viewportWidth = window.innerWidth, viewportHeight = window.innerHeight;
+        let left = e.clientX, top = e.clientY;
+        if (e.clientX + menuWidth > viewportWidth) { left = viewportWidth - menuWidth - 5; }
+        if (e.clientY + menuHeight > viewportHeight) { top = e.clientY - menuHeight; }
+        if (isNewOpen) { showMenu(left, top); } else { moveMenu(left, top); }
+        menuOpenTime = now;
+    });
+    function showMenu(left, top) {
+        if (isAnimating) return; isAnimating = true;
+        customMenu.style.left = `${left}px`; customMenu.style.top = `${top}px`;
+        customMenu.style.display = 'block'; customMenu.classList.remove('hiding');
+        requestAnimationFrame(() => { customMenu.classList.add('visible'); setTimeout(() => { isAnimating = false; isMenuVisible = true; }, 150); });
+    }
+    function moveMenu(left, top) { customMenu.style.left = `${left}px`; customMenu.style.top = `${top}px`; }
+    function hideMenu() {
+        if (!isMenuVisible || isAnimating) return; isAnimating = true;
+        customMenu.classList.remove('visible'); customMenu.classList.add('hiding');
+        setTimeout(() => { customMenu.style.display = 'none'; isAnimating = false; isMenuVisible = false; }, 150);
+    }
+    document.addEventListener('click', (e) => { if (isMenuVisible && !customMenu.contains(e.target)) hideMenu(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && isMenuVisible) hideMenu(); });
+    function updateMenuItemsVisibility() {
+        const isInputOrTextarea = document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA');
+        copyItem.style.display = selectedText.length > 0 ? 'flex' : 'none';
+        pasteItem.style.display = isInputOrTextarea ? 'flex' : 'none';
+        openInNewTabItem.style.display = !!currentTarget ? 'flex' : 'none';
+        copyLinkItem.style.display = !!currentTarget ? 'flex' : 'none';
+    }
+    function backAction() { window.history.back(); hideMenu(); }
+    function refreshAction() { location.reload(); hideMenu(); }
+    function copyAction() { if (selectedText) navigator.clipboard.writeText(selectedText); hideMenu(); }
+    async function pasteAction() { if (focusedElementBeforeMenu) { try { const text = await navigator.clipboard.readText(); focusedElementBeforeMenu.focus(); document.execCommand('insertText', false, text); } catch (err) { } } hideMenu(); }
+    function openInNewTabAction() { if (currentTarget) window.open(currentTarget.href, '_blank'); hideMenu(); }
+    function copyLinkAction() { if (currentTarget) navigator.clipboard.writeText(currentTarget.href); hideMenu(); }
+    function backToHomeAction() { window.location.href = 'https://lanrhyme.netlify.app/'; hideMenu(); }
+
+    // Theme toggle (unchanged)
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    const themeToggleIcon = themeToggleBtn.querySelector('i');
+    function setTheme(theme) {
+        const isDark = theme === 'dark';
+        document.documentElement.classList.toggle('dark-mode', isDark);
+        themeToggleIcon.classList.toggle('fa-moon', !isDark);
+        themeToggleIcon.classList.toggle('fa-sun', isDark);
+        localStorage.setItem('theme', theme);
+        updateChartColors();
+    }
+    function loadTheme() {
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        setTheme(savedTheme || (prefersDark ? 'dark' : 'light'));
+    }
+    themeToggleBtn.addEventListener('click', () => {
+        const newTheme = document.documentElement.classList.contains('dark-mode') ? 'light' : 'dark';
+        setTheme(newTheme);
+    });
+
+    function updateChartColors() {
+        setTimeout(() => {
+            const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim();
+            const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--card-border').trim();
+            const amethystColor = getComputedStyle(document.documentElement).getPropertyValue('--amethyst-color').trim();
+            const highlightBg = getComputedStyle(document.documentElement).getPropertyValue('--highlight-bg').trim();
+
+            if (statsChartInstance) {
+                statsChartInstance.data.datasets[0].borderColor = amethystColor;
+                statsChartInstance.data.datasets[0].backgroundColor = highlightBg;
+                statsChartInstance.data.datasets[0].pointBackgroundColor = amethystColor;
+                statsChartInstance.update();
+            }
+        }, 50);
+    }
+
+    // DOM Ready Initializations
+    document.addEventListener('DOMContentLoaded', function () {
+        loadTheme();
+        fetchGitHubInfo();
+        checkAiStatus();
+        fetchUsageStats();
+    });
+
+    // Card Animation (unchanged)
+    document.addEventListener("DOMContentLoaded", function () {
+        const cards = document.querySelectorAll(".anim-card");
+        function checkVisibility() { cards.forEach(card => { const rect = card.getBoundingClientRect(); if (rect.top < window.innerHeight && rect.bottom >= 0 && !card.classList.contains('active')) { card.classList.add('active'); } }); }
+        checkVisibility();
+        window.addEventListener("scroll", checkVisibility);
+    });
+
+    // Warning Popup (unchanged)
+    function showWarningPopup(keyword, description) { document.getElementById('warningKeyword').innerText = keyword; document.getElementById('warningDescription').innerText = description; document.getElementById('warningPopup').classList.remove('hidden'); }
+    function hideWarningPopup() { document.getElementById('warningPopup').classList.add('hidden'); }
+
+    // GitHub Info Fetching (unchanged)
+    async function fetchGitHubInfo() {
+        try {
+            const response = await fetch('/.netlify/functions/github');
+            const data = await response.json();
+            if (data.error) {
+                document.getElementById('github-stars').innerText = 'N/A';
+                document.getElementById('github-commit').innerText = 'N/A';
+                console.error('获取 GitHub 信息失败:', data.error);
+                return;
+            }
+            document.getElementById('github-stars').innerText = data.stars || 'N/A';
+            document.getElementById('github-commit').innerText = data.lastCommitDate ? new Date(data.lastCommitDate).toLocaleString() : 'N/A';
+        } catch (error) {
+            document.getElementById('github-stars').innerText = 'N/A';
+            document.getElementById('github-commit').innerText = 'N/A';
+            console.error('获取 GitHub 信息异常:', error);
+        }
+    }
+
+    // AI Status Check (unchanged)
+    async function checkAiStatus() {
+        const geminiStatusElem = document.getElementById('gemini-status');
+        const geminiLatencyElem = document.getElementById('gemini-latency');
+        geminiStatusElem.innerText = '检测中...';
+        geminiLatencyElem.innerText = '检测中...';
+        try {
+            const startTime = Date.now();
+            const response = await fetch('/.netlify/functions/gemini');
+            const endTime = Date.now();
+            const latency = endTime - startTime;
+
+            const data = await response.json();
+            if (data.status === 'ok') {
+                geminiStatusElem.innerText = '在线';
+                geminiStatusElem.style.color = 'var(--amethyst-color)';
+                geminiLatencyElem.innerText = `${latency}ms`;
+                geminiLatencyElem.style.color = 'var(--amethyst-color)';
+            } else {
+                geminiStatusElem.innerText = '离线 / 错误';
+                geminiStatusElem.style.color = 'var(--text-red-700)';
+                geminiLatencyElem.innerText = `N/A`;
+                geminiLatencyElem.style.color = 'var(--text-red-700)';
+                console.warn('Gemini AI 状态检测失败:', data.message);
+            }
+        } catch (error) {
+            geminiStatusElem.innerText = '无法连接';
+            geminiStatusElem.style.color = 'var(--text-red-700)';
+            geminiLatencyElem.innerText = `N/A`;
+            geminiLatencyElem.style.color = 'var(--text-red-700)';
+            console.error('检查 Gemini AI 状态异常:', error);
+        }
+    }
+
+    // Stats Chart (unchanged)
+    function createOrUpdateStatsChart(trendData) {
+        const ctx = document.getElementById('usage-chart').getContext('2d');
+        const labels = ['6天前', '5天前', '4天前', '3天前', '昨天', '前天', '今天'];
+        const amethystColor = getComputedStyle(document.documentElement).getPropertyValue('--amethyst-color').trim();
+        const highlightBg = getComputedStyle(document.documentElement).getPropertyValue('--highlight-bg').trim();
+
+        if (statsChartInstance) {
+            statsChartInstance.destroy();
+        }
+        statsChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '上传数量',
+                    data: trendData,
+                    borderColor: amethystColor,
+                    backgroundColor: highlightBg,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false, } },
+                scales: { x: { display: false }, y: { display: false, beginAtZero: true } },
+                interaction: { mode: 'nearest', axis: 'x', intersect: false }
+            }
+        });
+    }
+
+    // Stats Fetching (unchanged)
+    async function fetchUsageStats() {
+        const totalElem = document.getElementById('stats-total');
+        const dailyElem = document.getElementById('stats-daily');
+        const weeklyElem = document.getElementById('stats-weekly');
+        try {
+            const response = await fetch('/.netlify/functions/stats');
+            if (!response.ok) throw new Error(`HTTP 错误! 状态: ${response.status}`);
+            const data = await response.json();
+            if (data.error) throw new Error(data.error);
+            totalElem.innerText = data.total;
+            dailyElem.innerText = data.daily;
+            weeklyElem.innerText = data.weekly;
+            createOrUpdateStatsChart(data.dailyTrend);
+        } catch (error) {
+            totalElem.innerText = 'N/A';
+            dailyElem.innerText = 'N/A';
+            weeklyElem.innerText = 'N/A';
+            console.error('获取使用情况统计失败:', error);
+        }
+    }
+
+    // --- MODIFIED: Log upload and analysis now uses a single API call ---
+    document.getElementById('uploadBtn').onclick = async function () {
+        const fileInput = document.getElementById('logFile');
+        const file = fileInput.files[0];
+        if (!file) {
+            alert('请选择日志文件');
+            return;
+        }
+        const formData = new FormData();
+        formData.append('file', file);
+        const resultDiv = document.getElementById('analysisResult');
+        resultDiv.innerHTML = `<div class="solid-card text-center p-4" style="color: var(--text-primary);">正在分析中，请稍候...</div>`;
+
+        try {
+            const response = await fetch('/.netlify/functions/extract', {
+                method: 'POST',
+                body: formData
+            });
+
+            fetchUsageStats(); // Refresh stats after every upload attempt
+
+            const data = await response.json();
+
+            if (data.error) {
+                resultDiv.innerHTML = `<div class="solid-card text-red-700 p-4">${data.error}</div>`;
+                return;
+            }
+
+            // Handle Popups for rate limiting or custom keywords
+            if (data.rateLimited) {
+                showWarningPopup('请求次数过多', '您在短时间内请求次数过多，AI分析已被暂时跳过，请稍后重试');
+            } else if (data.info.keyword) {
+                showWarningPopup(data.info.keyword, "由开发者添加，这可能是导致游戏崩溃的主要原因，一般来说是模组文件，请检查你的mod列表");
+            }
+
+            const cacheNotification = data.isCached ? `<span class="text-xs ml-4 p-1 rounded" style="background-color: var(--highlight-bg); color: var(--amethyst-color);">从缓存加载</span>` : '';
+
+            const infoDisplayMap = {
+                launcher_name: '启动器', device: '设备', os: '操作系统', launcher_version: '启动器版本', commit: '提交版本号', java_version: 'Java 版本', renderer: '渲染器', minecraft_version: '游戏版本', keyword: '可能导致崩溃的关键词'
+            };
+
+            let resultHTML = `<div id="basicInfoCard" class="result-card anim-card">
+                    <h3 class="text-lg font-bold">基础信息提取 ${cacheNotification}</h3><hr class="my-3" style="border-color: var(--card-border);">
+                    <ul class="list-disc list-inside text-left space-y-1">`;
+            for (const key in data.info) {
+                if (Object.prototype.hasOwnProperty.call(data.info, key)) {
+                    resultHTML += `<li><strong>${infoDisplayMap[key] || key}：</strong>${data.info[key]}</li>`;
+                }
+            }
+            resultHTML += `</ul></div>`;
+
+            resultHTML += `<div id="quickAnalysisCard" class="result-card anim-card mt-6">
+                <h3 class="text-lg font-bold">快速分析结果<span class="text-xs ml-4 p-1 rounded" style="background-color: var(--highlight-bg); color: var(--amethyst-color);">来自PCL2数据</span></h3><hr class="my-3" style="border-color: var(--card-border);">
+                <div class="quick-analysis-content text-left" style="word-wrap: break-word;">${marked.parse(data.quickAnalysis)}</div>
+            </div>`;
+
+            resultHTML += `<div id="geminiCard" class="result-card anim-card mt-6">
+                    <h3 class="text-lg font-bold">AI 分析结果<span class="text-xs ml-4 p-1 rounded" style="background-color: var(--highlight-bg); color: var(--amethyst-color);">Gemini 2.5 Flash</span></h3><hr class="my-3" style="border-color: var(--card-border);">
+                    <div class="gemini-content text-left" style="word-wrap: break-word;">${marked.parse(data.gemini)}</div></div>`;
+
+            resultDiv.innerHTML = resultHTML;
+            setTimeout(() => { document.querySelector('#analysisResult #basicInfoCard').classList.add('active'); }, 50);
+            setTimeout(() => { document.querySelector('#quickAnalysisCard').classList.add('active'); }, 150);
+            setTimeout(() => { document.querySelector('#geminiCard').classList.add('active'); }, 250);
+
+            // Add action buttons
+            const buttonsContainer = document.createElement('div');
+            buttonsContainer.className = 'mt-4 flex space-x-4 justify-end';
+            document.querySelector('#geminiCard').appendChild(buttonsContainer);
+
+            let copyBtn = document.createElement('button');
+            copyBtn.innerText = '复制分析内容';
+            copyBtn.className = 'px-4 py-2 amethyst-dark-button';
+            copyBtn.onclick = function () {
+                const baseCardText = Array.from(document.querySelector('#basicInfoCard ul').children).map(li => li.innerText).join('\n');
+                const quickAnalysisText = document.querySelector('#quickAnalysisCard .quick-analysis-content').innerText;
+                const aiCardText = document.querySelector('#geminiCard .gemini-content').innerText;
+                navigator.clipboard.writeText(`【基础信息】\n${baseCardText}\n\n【快速分析】\n${quickAnalysisText}\n\n【AI分析】\n${aiCardText}`).then(() => {
+                    copyBtn.innerText = '已复制！'; setTimeout(() => { copyBtn.innerText = '复制分析内容'; }, 1500);
+                });
+            };
+            buttonsContainer.appendChild(copyBtn);
+
+            let saveImageBtn = document.createElement('button');
+            saveImageBtn.innerText = '保存为图片';
+            saveImageBtn.className = 'px-4 py-2 amethyst-dark-button';
+            saveImageBtn.onclick = async function () {
+                saveImageBtn.innerText = '生成中...';
+                saveImageBtn.disabled = true;
+                const elementToCapture = document.getElementById('analysisResult');
+                try {
+                    const canvas = await html2canvas(elementToCapture, { scale: 2, useCORS: true, backgroundColor: getComputedStyle(document.body).getPropertyValue('--bg-primary').trim() });
+                    const link = document.createElement('a');
+                    link.href = canvas.toDataURL('image/png');
+                    link.download = 'MinecraftLogAnalysisResult.png';
+                    link.click();
+                    saveImageBtn.innerText = '保存成功！';
+                } catch (err) {
+                    console.error('保存图片失败:', err);
+                    saveImageBtn.innerText = '保存失败';
+                } finally {
+                    setTimeout(() => {
+                        saveImageBtn.innerText = '保存为图片';
+                        saveImageBtn.disabled = false;
+                    }, 2000);
+                }
+            };
+            buttonsContainer.appendChild(saveImageBtn);
+
+        } catch (e) {
+            resultDiv.innerHTML = `<div class="solid-card text-red-700 p-4">分析失败：${e.message}</div>`;
+        }
+    };
+</script>
+</body>
+
+</html>
