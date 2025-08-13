@@ -91,7 +91,7 @@ app.use(express.static(__dirname));
 async function callGemini(log, proxyTarget) {
     const target = proxyTarget || GEMINI_PROXY_TARGET;
     const url = `${target}v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-    const prompt = `请分析以下Minecraft日志，给出主要错误原因和建议：\n${log}`;
+    const prompt = `请分析以下Minecraft日志，给出主要错误原因、其他原因和建议，并在给出快速解决方案，快速解决方案尽量简短，错误原因尽量详细：\n${log}`;
     try {
         const res = await axios.post(url, {
             contents: [{ parts: [{ text: prompt }] }]
