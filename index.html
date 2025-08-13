@@ -630,22 +630,7 @@
                     </div>
                 </div>
 
-                <div id="usage-stats" class="solid-card anim-card hover:scale-105">
-                    <h3 class="text-lg font-semibold mb-2 flex items-center">
-                        <span class="w-7 h-7 rounded-full flex items-center justify-center mr-2 text-sm">
-                            <i class="fas fa-chart-line theme-icon-color"></i>
-                        </span>
-                        使用情况统计
-                    </h3>
-                    <div class="text-sm space-y-1">
-                        <p>总上传数: <span id="stats-total" class="font-medium">加载中...</span></p>
-                        <p>今日上传: <span id="stats-daily" class="font-medium">加载中...</span></p>
-                        <p>本周上传: <span id="stats-weekly" class="font-medium">加载中...</span></p>
-                    </div>
-                    <div class="mt-4" style="height: 80px;">
-                        <canvas id="usage-chart"></canvas>
-                    </div>
-                </div>
+
             </div>
         </section>
     </main>
@@ -903,27 +888,7 @@
         });
     }
 
-    // Stats Fetching (unchanged)
-    async function fetchUsageStats() {
-        const totalElem = document.getElementById('stats-total');
-        const dailyElem = document.getElementById('stats-daily');
-        const weeklyElem = document.getElementById('stats-weekly');
-        try {
-            const response = await fetch('/api/stats');
-            if (!response.ok) throw new Error(`HTTP 错误! 状态: ${response.status}`);
-            const data = await response.json();
-            if (data.error) throw new Error(data.error);
-            totalElem.innerText = data.total;
-            dailyElem.innerText = data.daily;
-            weeklyElem.innerText = data.weekly;
-            createOrUpdateStatsChart(data.dailyTrend);
-        } catch (error) {
-            totalElem.innerText = 'N/A';
-            dailyElem.innerText = 'N/A';
-            weeklyElem.innerText = 'N/A';
-            console.error('获取使用情况统计失败:', error);
-        }
-    }
+
 
     // --- MODIFIED: Log upload and analysis now uses a single API call ---
     document.getElementById('uploadBtn').onclick = async function () {

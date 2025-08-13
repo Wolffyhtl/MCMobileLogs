@@ -542,15 +542,7 @@ app.post('/api/extract', upload.single('file'), rateLimiter, async (req, res) =>
     }
 });
 
-// --- STATS API is unchanged ---
-app.get('/api/stats', (req, res) => {
-    const stats = {
-        total: 0,
-        daily: 0,
-        weekly: 0,
-        dailyTrend: Array(7).fill(0)
-    };
-});
+
 
 // --- OTHER APIs are unchanged ---
 app.get('/api/github-info', async (req, res) => {
