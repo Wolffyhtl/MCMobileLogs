@@ -578,12 +578,12 @@ app.get('/api/check-gemini-status', async (req, res) => {
     }
     const startTime = Date.now();
     try {
-        // 检查 Gemini 代理的实际 API 路径（POST 请求）
+        // 检查 Gemini 代理的实际 API 路径（POST 请求），超时时间提升到 10000ms
         const url = `${target}v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
         const prompt = '健康检查';
         await axios.post(url, {
             contents: [{ parts: [{ text: prompt }] }]
-        }, { timeout: 5000 });
+        }, { timeout: 10000 });
         const endTime = Date.now();
         const latency = endTime - startTime;
         res.json({ status: 'ok', message: 'Gemini 代理连接正常', latency: latency });
@@ -591,7 +591,7 @@ app.get('/api/check-gemini-status', async (req, res) => {
         const endTime = Date.now();
         const latency = endTime - startTime;
         console.error('Error checking Gemini proxy status:', error.message);
-        res.json({ status: 'error', message: 'Gemini 代理连接失败: ' + error.message, latency: latency });
+        res.json({ status: 'error', message: 'Gemini 代理连接失败: ' + error.message + (error.stack ? ('\n' + error.stack) : ''), latency: latency });
     }
 });
 
