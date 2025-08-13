@@ -586,7 +586,12 @@ app.get('/api/check-gemini-status', async (req, res) => {
     }
     const startTime = Date.now();
     try {
-        await axios.get(target, { timeout: 5000 });
+        // 检查 Gemini 代理的实际 API 路径（POST 请求）
+        const url = `${target}v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+        const prompt = '健康检查';
+        await axios.post(url, {
+            contents: [{ parts: [{ text: prompt }] }]
+        }, { timeout: 5000 });
         const endTime = Date.now();
         const latency = endTime - startTime;
         res.json({ status: 'ok', message: 'Gemini 代理连接正常', latency: latency });
