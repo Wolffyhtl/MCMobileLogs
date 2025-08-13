@@ -909,7 +909,8 @@
                 body: formData
             });
 
-            fetchUsageStats(); // Refresh stats after every upload attempt
+            // fetchUsageStats() 可能未定义，先注释掉，避免报错
+            // fetchUsageStats(); // Refresh stats after every upload attempt
 
             const data = await response.json();
 
@@ -1007,3 +1008,4 @@
 </body>
 
 </html>
+
