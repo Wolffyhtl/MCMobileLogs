@@ -3,7 +3,7 @@
 const serverless = require('serverless-http');
 
 // 2️⃣  下面是你原来的 server.js 完整内容（一行未改）
-require('dotenv').config();
+require('dotenv')。config();
 const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
@@ -15,15 +15,15 @@ const crypto = require('crypto');
 const app = express();
 const upload = multer({ dest: '/tmp' });
 
-app.use(cors());
-app.use(express.json({ limit: '8mb' }));
-app.set('trust proxy', 1);
+app。use(cors());
+app。use(express。json({ limit: '8mb' }));
+app。set('trust proxy'， 1);
 
 // -------------------- 原 server.js 代码开始 --------------------
 const PORT = process.env.PORT || 3000;
 const Database = require('better-sqlite3');
 const db = new Database('/tmp/stats.db');
-db.exec(`
+db。exec(`
   CREATE TABLE IF NOT EXISTS upload_stats (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -37,7 +37,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const CUSTOM_KEYWORDS_ENV = process.env.CUSTOM_KEYWORDS || '';
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
 
-console.log('Gemini Key:', GEMINI_API_KEY ? '已设置' : '未设置');
+console.log('ChatGPT Key:', GEMINI_API_KEY ? '已设置' : '未设置');
 console.log('Custom Keywords (from .env):', CUSTOM_KEYWORDS_ENV || '未设置');
 console.log('GitHub Token:', GITHUB_TOKEN ? '已设置' : '未设置');
 
@@ -98,8 +98,8 @@ async function callGemini(log, proxyTarget) {
         });
         return res.data.candidates?.[0]?.content?.parts?.[0]?.text || 'Gemini无返回内容';
     } catch (e) {
-        console.error('Gemini API 调用异常:', e.response?.data || e.message);
-        return 'Gemini API 调用失败,请重试: ' + (e.response?.data?.error?.message || e.message);
+        console.error('ChatGPT API 调用异常:', e.response?.data || e.message);
+        return 'ChatGPT API 调用失败,请重试: ' + (e.response?.data?.error?.message || e.message);
     }
 }
 
